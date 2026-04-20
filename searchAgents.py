@@ -288,6 +288,7 @@ class CornersProblem(search.SearchProblem):
         # Please add any code here which you would like to use
         # in initializing the problem
         "*** YOUR CODE HERE ***"
+        
 
     def getStartState(self):
         """
@@ -295,6 +296,7 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         "*** YOUR CODE HERE ***"
+        return (self.startingPosition, (False, False, False, False))
         util.raiseNotDefined()
 
     def isGoalState(self, state):
@@ -302,6 +304,7 @@ class CornersProblem(search.SearchProblem):
         Returns whether this search state is a goal state of the problem.
         """
         "*** YOUR CODE HERE ***"
+        return all(state[1])
         util.raiseNotDefined()
 
     def getSuccessors(self, state):
@@ -316,6 +319,7 @@ class CornersProblem(search.SearchProblem):
         """
 
         successors = []
+        pos, visited = state
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             # Add a successor state to the successor list if the action is legal
             # Here's a code snippet for figuring out whether a new position hits a wall:
@@ -325,6 +329,17 @@ class CornersProblem(search.SearchProblem):
             #   hitsWall = self.walls[nextx][nexty]
 
             "*** YOUR CODE HERE ***"
+            x, y = pos
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextPos = (nextx, nexty)
+                # Update visited status if nextPos is a corner
+                nextVisited = list(visited)
+                for i, corner in enumerate(self.corners):
+                    if nextPos == corner:
+                        nextVisited[i] = True
+                successors.append(((nextPos, tuple(nextVisited)), action, 1))
 
         self._expanded += 1 # DO NOT CHANGE
         return successors
@@ -360,6 +375,14 @@ def cornersHeuristic(state, problem):
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
     "*** YOUR CODE HERE ***"
+    currentPos, visited = state
+    unvisited = [corners[i] for i in range(len(corners)) if not visited[i]]
+    
+    if not unvisited:
+        return 0
+
+    # Return the Manhattan distance to the furthest unvisited corner
+    return max([util.manhattanDistance(currentPos, corner) for corner in unvisited])
     return 0 # Default to trivial solution
 
 class AStarCornersAgent(SearchAgent):
@@ -454,6 +477,17 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
+    foodList = foodGrid.asList()
+
+    if not foodList:
+        return 0
+
+    # Calculate the maze distance to each remaining food dot
+    # mazeDistance is a helper provided in searchAgents.py that uses BFS
+    distances = [mazeDistance(position, food, problem.startingGameState) for food in foodList]
+    
+    # The heuristic value is the distance to the furthest food dot
+    return max(distances)
     return 0
 
 class ClosestDotSearchAgent(SearchAgent):
@@ -485,6 +519,7 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
+        return search.breadthFirstSearch(problem) # BFS finds the closest dot in steps
         util.raiseNotDefined()
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -521,6 +556,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
+        return self.food[x][y]
         util.raiseNotDefined()
 
 def mazeDistance(point1, point2, gameState):
